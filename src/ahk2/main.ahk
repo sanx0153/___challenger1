@@ -1,4 +1,9 @@
 #Requires AutoHotkey v2.0
+#SingleInstance Force
+LAUGH := "HaHAhA"
+SMILE := "=)"
+CARD := Chr(0x004B) Chr(0x2660)
+A_ScriptName := CARD
 
 class main {
     __New() {
@@ -7,6 +12,8 @@ class main {
 }
 
 class output {
+    CELL_W := 100
+    CELL_H := 100
     __New() {
         this.GUI := Gui("AlwaysOnTop -Border -Caption")
         this.tools := tools()
@@ -40,7 +47,15 @@ class output {
     }
     MakeSquare(line,column)
     {
-        answer := this.GUI.AddText(this.SquarePositionTag(line,column) " Border Center Disabled","0")
+        answer := this.GUI.AddText(this.SquarePositionTag(line,column) " w" this.CELL_W " h" this.CELL_H " Border Center","")
+        answer.SetFont("w1000 s64 cPurple","Verdana")
+        answer.Update
+        {
+            set
+            {
+                value := ;quero que update ao ser chamada faça com que value receba a correspondente value da parte logica
+            }
+        }
         return answer
     }
     Render()
@@ -48,16 +63,21 @@ class output {
         for line in this.squares
         {
             nLine := A_Index
-            for square in line
+            for square in line 
             {
-                MsgBox(nLine A_Index)
+                nColumn := A_Index
+                this.squares[nLine][nColumn].Update()
             }
         }
     }
+    SetSquareValue(line,column,theValue)
+    {
+        this.squares[line][column].Value := theValue
+    }
     SquarePositionTag(line,column)
     {
-        x := (line - 1) * 50
-        y := (column - 1) * 50
+        x := (line - 1) * this.CELL_W
+        y := (column - 1) * this.CELL_H
         answer := "x" x " y" y
         return answer
     }
