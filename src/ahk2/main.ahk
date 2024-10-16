@@ -33,7 +33,7 @@ class input
     }
     Try(line,column)
     {
-        return parent.logic.trySquare(line,column)
+        return this.parent.logic.trySquare(line,column)
     }
 }
 
@@ -54,16 +54,71 @@ class logic
     __New(parent)
     {
         this.parent := parent
+        this.board := this.createBoard()
+        this.currentPlayer := this.firstPlayer()
+    }
+    createBoard()
+    {
+        answer := []
+        loop 9
+        {
+            answer.Push(LogicalSquare())
+        }
+    }
+    firstPlayer()
+    {
+        answer := ""
+        table := ["O","X"]
+        ;logica para decidir primeiro player
+        answer := table[1] ;eliminar depois de fazer acima.
+        return answer
+    }
+    render()
+    {
+        return this.parent.output.Update(this.state)
     }
     trySquare(line,column)
     {
+        who := this.currentPlayer
         squareIndex := line * ( 1  + column )
         target := this.board[squareIndex]
-        if target.IsEmpty = false
+        if target.isEmpty = false
             return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
-        return target.Play
+        target.play(who)
+        return this.render()
+    }
+    
+}
+
+class logicalSquare
+{
+    isO := false
+    isX := false
+    isEmpty
+    {
+        get
+        {
+            if (this.isO && this.isX == false)
+                return true
+            return false
+        }
+    }
+    play(who)
+    {
+        who := StrUpper(who)
+        table := ["O","X"]
+        for , player in table
+        {
+            if (who == player)
+            {
+                this.is%who% := true
+                return true
+            }
+        }
+        return MsgBox(A_ThisFunc " esperando " table.OwnProps() " e recebeu " who)
     }
 }
+
 
 class main {
     __New()
@@ -82,12 +137,26 @@ class output {
         this.GUI := Gui("-Border -Caption")
         this.tools := tools()
         this.squares := this.MakeBoard()
-        this.Appear()
+        this.state := ""
+        this.appear()
         this.render()
     }
-    Appear()
+    appear()
     {
         this.GUI.Show("Center AutoSize")
+    }
+    getIndexFromLineColumn(line,column)
+    {
+        answer := ""
+        answer := (((line - 1) * 3) + column)
+        return answer
+    }
+    getSquareValueFromBoardState(board,line,column)
+    {
+        answer     := ""
+        index      := this.getIndexFromLineColumn(line,column)
+        dictionary := {00: "",01: "X",10: "O"}
+        return answer
     }
     MakeBoard()
     {
@@ -120,13 +189,14 @@ class output {
     }
     Render()
     {
+        board := this.state
         for line in this.squares
         {
             nLine := A_Index
             for square in line 
             {
                 nColumn := A_Index
-                ;this.squares[nLine][nColumn].Update()
+                this.squares[nLine][nColumn].Value(this.getSquareValueFromBoardState(board,nLine,nColumn))
             }
         }
     }
@@ -140,6 +210,11 @@ class output {
         y := (column - 1) * this.CELL_H
         answer := "x" x " y" y
         return answer
+    }
+    Update(logicState)
+    {
+        this.state := logicState
+        this.Render()
     }
 }
 
