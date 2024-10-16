@@ -1,21 +1,85 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 LAUGH := "HaHAhA"
-SMILE := "=)"
+SMILE := Chr(0x003D) Chr(0x0029)
 CARD := Chr(0x004B) Chr(0x2660)
 A_ScriptName := CARD
+main()
+
+class Joke
+{
+    table := ["LAUGH","SMILE","CARD"]
+    tick := 0
+    __New()
+    {
+        target := ObjBindMethod(this,"Play")
+        SetTimer(target,2000)
+    }
+    Play()
+    {
+        if this.tick = 3
+            this.tick := 0
+        this.tick++
+        A_ScriptName := this.table[this.tick]
+        MsgBox(%this.table[this.tick]%,,"t1")
+    }
+}
+
+class input
+{
+    __New(parent)
+    {
+        this.parent := parent
+    }
+    Try(line,column)
+    {
+        return parent.logic.trySquare(line,column)
+    }
+}
+
+class logic
+{
+    state
+    {
+        get
+        {
+            answer := ""
+            loop this.board.Length
+            {
+                answer .= this.board[A_Index]
+            }
+            return answer
+        }
+    }
+    __New(parent)
+    {
+        this.parent := parent
+    }
+    trySquare(line,column)
+    {
+        squareIndex := line * ( 1  + column )
+        target := this.board[squareIndex]
+        if target.IsEmpty = false
+            return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
+        return target.Play
+    }
+}
 
 class main {
-    __New() {
-        
+    __New()
+    {
+        this.input := input(this)
+        this.logic := logic(this)
+        this.output := output(this)
     }
 }
 
 class output {
     CELL_W := 100
     CELL_H := 100
-    __New() {
-        this.GUI := Gui("AlwaysOnTop -Border -Caption")
+    __New(parent) {
+        this.parent := parent
+        this.GUI := Gui("-Border -Caption")
         this.tools := tools()
         this.squares := this.MakeBoard()
         this.Appear()
@@ -41,21 +105,17 @@ class output {
         for column in answer
         {
             column := A_Index
-            answer[column] := this.MakeSquare(line,column)
+            answer[column] := this.MakeSquare(line,column,this.parent)
         }
         return answer
     }
-    MakeSquare(line,column)
+    MakeSquare(line,column,parent)
     {
         answer := this.GUI.AddText(this.SquarePositionTag(line,column) " w" this.CELL_W " h" this.CELL_H " Border Center","")
         answer.SetFont("w1000 s64 cPurple","Verdana")
-        answer.Update
-        {
-            set
-            {
-                value := ;quero que update ao ser chamada faça com que value receba a correspondente value da parte logica
-            }
-        }
+        answer.position := []
+        answer.position.Push(line,column)
+        answer.OnEvent("DoubleClick",ObjBindMethod(parent.input,"try",line,column))
         return answer
     }
     Render()
@@ -66,7 +126,7 @@ class output {
             for square in line 
             {
                 nColumn := A_Index
-                this.squares[nLine][nColumn].Update()
+                ;this.squares[nLine][nColumn].Update()
             }
         }
     }
@@ -109,5 +169,3 @@ class tools
         return answer
     }
 }
-
-test := output()
