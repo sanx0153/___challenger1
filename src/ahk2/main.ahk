@@ -6,6 +6,7 @@ SMILE := Chr(0x003D) Chr(0x0029)
 CARD := Chr(0x004B) Chr(0x2660)
 A_ScriptName := CARD
 app := main()
+app.start()
 
 class Joke
 {
@@ -31,12 +32,14 @@ class inputManager
     __New(parent)
     {
         this.parent := %parent%
-        OnMessage(0x2000,this.play)
     }
-    play(line,column,*)
+    static play(index,*)
     {
-        MsgBox(line column)
-        PostMessage(0x2001,line,column)
+        PostMessage(0xF001,index,,,CARD)
+    }
+    start()
+    {
+        OnMessage(0xF000,inputManager.play)
     }
 }
 
@@ -59,7 +62,6 @@ class logic
         this.parent := %parent%
         this.currentPlayer := 1
         this.board := this.createBoard()
-        OnMessage(0x2001,this.trySquare)
     }
     createBoard()
     {
@@ -72,17 +74,29 @@ class logic
     }
     render()
     {
-        return this.parent.window.Update()
+        answer := ""
+        updateIsDone := this.parent.window.Update()
+        if updateIsDone
+            return answer := true
+        answer := false
+        return answer
     }
-    trySquare(line,column,*)
+    start()
     {
+        OnMessage(0xF001,this.trySquare)
+    }
+    trySquare(index,*)
+    {
+        answer := ""
         who := this.currentPlayer
-        squareIndex := To.Index(line,column)
+        squareIndex := index
         targetIsEmpty := this.board[squareIndex].isEmpty
-        if targetIsEmpty == false
+        if (targetIsEmpty == false)
             return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
-        this.board[squareIndex].play(who) 
-        return this.render()
+        boardIsPlayed := this.board[squareIndex].play(who) 
+        renderIsDone := this.render()
+        answer := (boardIsPlayed && renderIsDone)
+        return answer
     }
     
 }
@@ -136,15 +150,25 @@ class main {
         this.input  := inputManager(link)
         this.window := window(link)
     }
+    start()
+    {
+        for i, v in this.OwnProps()
+        {
+            if v.HasMethod("start")
+            {
+                this.%i%.start()
+            }
+        }
+    }
 }
 
 class window {
     __New(parent) 
     {
         this.parent  := %parent%
-        this.GUI     := Gui("-Border -Caption")
-        this.squares := this.MakeBoard()
+        this.GUI     := Gui("-Border -Caption",CARD)
         this.appear()
+        this.squares := this.MakeBoard()
         this.Update()
     }
 
@@ -183,44 +207,30 @@ class window {
     }
     MakeBoard()
     {
-        answer := Make.Array(3)
-        for line in answer
+        answer := Make.Array(9)
+        loop answer.Length
         {
-            answer[A_Index] := this.MakeLine(A_Index)
+            index := A_Index
+            answer[index] := this.MakeSquare(index,this.parent)
         }
         return answer
     }
-    MakeLine(N)
+    MakeSquare(index,parent)
     {
-        line := N
-        answer := Make.Array(3)
-        for column in answer
-        {
-            column := A_Index
-            MsgBox(column)
-            answer[column] := this.MakeSquare(line,column,this.parent)
-        }
-        return answer
-    }
-    MakeSquare(line,column,parent)
-    {
-        answer := this.GUI.AddText(this.SquarePositionTag(line,column) " w" this.CELL_W " h" this.CELL_H " Border Center","")
+        answer := this.GUI.AddText(this.SquarePositionTag(To.Line(index),To.Column(index)) " w" this.CELL_W " h" this.CELL_H " Border Center","")
         answer.SetFont("w1000 s64 cPurple","Verdana")
-        answer.OnEvent("DoubleClick",PostMessage.Bind(0x2000,line,column))
+        answer.OnEvent("Click",PostMessage.Bind(0xF000,index,,0,CARD))
         return answer
     }
     Render()
     {
         board := this.state
-        for line in this.squares
+        loop this.squares.Length
         {
-            nLine := A_Index
-            for square in line 
-            {
-                nColumn := A_Index
-                this.squares[nLine][nColumn].Value := this.getSquareValueFromBoardState(board,nLine,nColumn)
-            }
+            index := A_Index
+            this.squares[index].Value := this.getSquareValueFromBoardState(board,To.Line(index),To.Column(index))
         }
+
     }
     SetSquareValue(line,column,theValue)
     {
