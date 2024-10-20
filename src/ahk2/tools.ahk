@@ -17,8 +17,8 @@ class To
     {
         answer := ""
         column := ""
-        column := (index - (To.Line(index) - 1) * 3)
-        answer := Round(column)
+        column := (Mod((index - 1),3) + 1)
+        answer := column
         return answer    
     }
     static Index(line,column) ;states index from line,column numbers
@@ -41,8 +41,25 @@ class To
     {
         answer := ""
         line := ""
-        line := ((Floor((index - 1) / 3)) + 1)
-        answer := Integer(line)
+        line := (((index - 1) // 3) + 1)
+        answer := line
+        return answer
+    }
+    static Value(flag) ; translates flag into O,X,?
+    {
+        answer := ""
+        switch flag
+        {
+        case 00:
+            answer := "?"
+        case 01:
+            answer := "X"
+        case 10:
+            answer := "O"
+        default:
+            MsgBox("Should Be 00,01,10 but is " flag)
+            return false
+        }
         return answer
     }
 }

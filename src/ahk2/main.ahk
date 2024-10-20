@@ -35,7 +35,7 @@ class inputManager
     }
     static play(index,*)
     {
-        PostMessage(0xF001,index,,,CARD)
+        logic.trySquare(index)
     }
     start()
     {
@@ -59,8 +59,8 @@ class logic
     }
     __New(parent)
     {
+        ;this.currentPlayer := 1
         this.parent := %parent%
-        this.currentPlayer := 1
         this.board := this.createBoard()
     }
     createBoard()
@@ -87,18 +87,27 @@ class logic
     }
     trySquare(index,*)
     {
-        answer := ""
-        who := this.currentPlayer
-        squareIndex := index
-        targetIsEmpty := this.board[squareIndex].isEmpty
-        if (targetIsEmpty == false)
-            return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
-        boardIsPlayed := this.board[squareIndex].play(who) 
-        renderIsDone := this.render()
-        answer := (boardIsPlayed && renderIsDone)
-        return answer
+        logic.trySquare(index)
     }
-    
+    static trySquare(index,*)
+    {
+        if index = 0
+            ++index
+        answer := ""
+        ;targetIsEmpty := (this.board[index]).isEmpty
+        ;if (targetIsEmpty = false)
+        ;    return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
+        boardIsPlayed := (this.board[index]).play(this.currentPlayer)
+        if (boardIsPlayed = false)
+            return MsgBox("Erro na execução da jogada. " A_ThisFunc)
+        renderIsDone := this.render()
+        if (renderIsDone = false)
+            return MsgBox("Erro de renderização")
+        answer := (targetIsEmpty & boardIsPlayed & renderIsDone)
+        if (answer = false)
+            return MsgBox("Erro não previsto")
+        return true
+    }
 }
 
 class LogicalSquare
@@ -109,7 +118,7 @@ class LogicalSquare
     {
         get
         {
-            if (this.state == 00)
+            if (this.isO & this.isX)
                 return true
             return false
         }
@@ -124,7 +133,7 @@ class LogicalSquare
     }
     play(who)
     {
-        if (this.isEmpty == false)
+        if (this.isEmpty = false)
             return MsgBox("Jogue em um Quadrado Vazio")
         table := ["O","X"]
         for , player in table
@@ -166,7 +175,7 @@ class window {
     __New(parent) 
     {
         this.parent  := %parent%
-        this.GUI     := Gui("-Border -Caption",CARD)
+        this.GUI     := Gui("-Border -Caption")
         this.appear()
         this.squares := this.MakeBoard()
         this.Update()
@@ -190,19 +199,12 @@ class window {
     {
         this.GUI.Show("Center w" this.WIN_W " h" this.WIN_H)
     }
-    getIndexFromLineColumn(line,column)
-    {
-        answer := ""
-        answer := (((line - 1) * 3) + column)
-        return answer
-    }
     getSquareValueFromBoardState(board,line,column)
     {
-        answer     := ""
-        index      := to.Index(line,column)
-        dictionary := {00: "",01: "X",10: "O"}
+        answer := ""
+        index  := to.Index(line,column)
         binary := SubStr(board,(((index - 1) * 2) + 1),2)
-        answer := dictionary.%binary%
+        answer := To.Value(binary)
         return answer
     }
     MakeBoard()
@@ -217,9 +219,9 @@ class window {
     }
     MakeSquare(index,parent)
     {
-        answer := this.GUI.AddText(this.SquarePositionTag(To.Line(index),To.Column(index)) " w" this.CELL_W " h" this.CELL_H " Border Center","")
+        answer := this.GUI.AddText(this.SquarePositionTag(To.Line(index),To.Column(index)) " w" this.CELL_W " h" this.CELL_H " Border Center","?")
         answer.SetFont("w1000 s64 cPurple","Verdana")
-        answer.OnEvent("Click",PostMessage.Bind(0xF000,index,,0,CARD))
+        answer.OnEvent("Click",inputManager.play.Bind(this,index))
         return answer
     }
     Render()
@@ -230,7 +232,6 @@ class window {
             index := A_Index
             this.squares[index].Value := this.getSquareValueFromBoardState(board,To.Line(index),To.Column(index))
         }
-
     }
     SetSquareValue(line,column,theValue)
     {
