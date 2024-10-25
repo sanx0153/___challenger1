@@ -19,15 +19,15 @@ class Joke
     }
     Play()
     {
-        if this.tick = 3
+        if this.tick == 3
             this.tick := 0
-        this.tick++
+        ++this.tick
         A_ScriptName := this.table[this.tick]
         MsgBox(%this.table[this.tick]%,,"t1")
     }
 }
 
-class inputManager
+class input
 {
     __New(parent)
     {
@@ -35,35 +35,97 @@ class inputManager
     }
     static play(index,*)
     {
+        for i, v in A_Args
+            MsgBox(i " " v,,"t1")
         logic.trySquare(index)
-    }
-    start()
-    {
-        OnMessage(0xF000,inputManager.play)
     }
 }
 
 class logic
 {
-    state
+    static board := logic.createBoard()
+    static currentPlayer := 0x1
+    static gameState := 
+    static state
     {
         get
         {
             answer := ""
-            loop this.board.Length
+            loop logic.board.Length
             {
-                answer .= this.board[A_Index].state
+                answer .= logic.board[A_Index].state
             }
             return answer
         }
     }
-    __New(parent)
+    static stateO
     {
-        ;this.currentPlayer := 1
-        this.parent := %parent%
-        this.board := this.createBoard()
+        get
+        {
+            answer := ""
+            loop logic.board.Length
+            {
+                answer .= logic.board[A_Index].isO
+            }
+            return answer
+        }
     }
-    createBoard()
+    static stateX
+    {
+        get
+        {
+            answer := ""
+            loop logic.board.Length
+            {
+                answer .= logic.board[A_Index].isX
+            }
+            return answer
+        }
+    }
+    __New(parentlink)
+    {
+        static parent := %parentlink%
+    }
+    static checkDraw()
+    {
+        loop logic.board.Length
+        {
+            if logic.board[A_Index].isEmpty == true
+                return false
+        }
+        return true
+    }
+    static checkWinner()
+    {
+    ; Máscaras binárias para padrões de vitória
+    patterns := [
+        0x07, ; Linha 1        - 0b000000111
+        0x38, ; Linha 2        - 0b000111000
+        0x1C0, ; Linha 3       - 0b111000000
+        0x49, ; Coluna 1       - 0b001001001
+        0x92, ; Coluna 2       - 0b010010010
+        0x124, ; Coluna 3      - 0b100100100
+        0x111, ; Diagonal principal - 0b100010001
+        0x54  ; Diagonal secundária - 0b001010100
+    ]
+    stateO := logic.stateO
+    stateX := logic.stateX
+
+    for pattern in patterns {
+        if ((stateO & (pattern)) == pattern)
+        {
+            MsgBox("O venceu")
+            return true
+        }
+        if ((stateX & (pattern)) == pattern)
+            {
+                MsgBox("X venceu")
+                return true
+            }
+    }
+    return false
+    }
+    static createBoard()
     {
         answer := []
         loop 9
@@ -72,41 +134,59 @@ class logic
         }
         return answer
     }
-    render()
+    static endGame(how)
     {
-        answer := ""
-        updateIsDone := this.parent.window.Update()
-        if updateIsDone
-            return answer := true
+        if how != ("draw" || "win")
+            return false
+        MsgBox(how)
+        return true
+    }
+    static endTurn()
+    {
+        switch logic.currentPlayer
+        {
+            case 0x1:
+                logic.currentPlayer := 0x2
+            case 0x2:
+                logic.currentPlayer := 0x1
+        }
+        return true
+    }
+    static render()
+    {
         answer := false
+        updateIsDone := app.window.Update()
+        if updateIsDone == true
+            answer := true
         return answer
     }
-    start()
+    static trySquare(index)
     {
-        OnMessage(0xF001,this.trySquare)
-    }
-    trySquare(index,*)
-    {
-        logic.trySquare(index)
-    }
-    static trySquare(index,*)
-    {
-        if index = 0
+        if index == 0
             ++index
-        answer := ""
-        ;targetIsEmpty := (this.board[index]).isEmpty
-        ;if (targetIsEmpty = false)
-        ;    return MsgBox("Clique duplo em um quadrado vazio, por favor.",,"t1")
-        boardIsPlayed := (this.board[index]).play(this.currentPlayer)
-        if (boardIsPlayed = false)
-            return MsgBox("Erro na execução da jogada. " A_ThisFunc)
-        renderIsDone := this.render()
-        if (renderIsDone = false)
-            return MsgBox("Erro de renderização")
-        answer := (targetIsEmpty & boardIsPlayed & renderIsDone)
-        if (answer = false)
-            return MsgBox("Erro não previsto")
-        return true
+        answer := false
+        boardIsPlayed := logic.board[index].play(logic.currentPlayer)
+        if (boardIsPlayed == false)
+        {
+            MsgBox("Erro na execução da jogada. " A_ThisFunc,,"T1")
+        }
+        renderIsDone := logic.render()
+        if (renderIsDone == false)
+        {
+            MsgBox("Erro de renderização")
+        }
+        if (boardIsPlayed & renderIsDone) == true
+        {
+            win := logic.checkWinner()
+            if win == true
+                return logic.endGame("win")
+            draw := logic.checkDraw()
+            if draw == true
+                return logic.endGame("draw")
+            logic.endTurn()
+            answer := true
+        }
+        return answer
     }
 }
 
@@ -118,29 +198,43 @@ class LogicalSquare
     {
         get
         {
-            if (this.isO & this.isX)
-                return true
-            return false
+            answer := (this.isO & this.isX) == false ? true : false
+            return answer
         }
     }
     state
     {
         get
         {
+            answer := ""
             answer := this.isO . this.isX
+            return answer
+        }
+    }
+    value
+    {
+        get
+        {
+            answer := ""
+            answer := to.Value(this.state)
             return answer
         }
     }
     play(who)
     {
-        if (this.isEmpty = false)
-            return MsgBox("Jogue em um Quadrado Vazio")
+        if (this.isEmpty == false)
+        {
+            MsgBox("Jogue em um Quadrado Vazio",,"t1")
+            return false
+        }
         table := ["O","X"]
         for , player in table
         {
             if (table[who] == player)
             {
                 tag := table[who]
+                this.isO := false
+                this.isX := false
                 this.is%tag% := true
                 return true
             }
@@ -152,12 +246,23 @@ class LogicalSquare
 
 
 class main {
+    static instance := ""
     __New()
     {
+        if !main.instance
+            main.instance := this
+        global FLAGO, FLAGX, FLAGNULL
         link        := &this
+        FLAGO       := 01
+        FLAGX       := 10
+        FLAGNULL    := 00
         this.logic  := logic(link)
-        this.input  := inputManager(link)
+        this.input  := input(link)
         this.window := window(link)
+    }
+    __Call()
+    {
+        return main.instance
     }
     start()
     {
@@ -190,7 +295,7 @@ class window {
     {
         get
         {
-            answer := this.parent.logic.state
+            answer := logic.state
             return answer
         }
     }
@@ -198,14 +303,6 @@ class window {
     appear()
     {
         this.GUI.Show("Center w" this.WIN_W " h" this.WIN_H)
-    }
-    getSquareValueFromBoardState(board,line,column)
-    {
-        answer := ""
-        index  := to.Index(line,column)
-        binary := SubStr(board,(((index - 1) * 2) + 1),2)
-        answer := To.Value(binary)
-        return answer
     }
     MakeBoard()
     {
@@ -219,23 +316,23 @@ class window {
     }
     MakeSquare(index,parent)
     {
-        answer := this.GUI.AddText(this.SquarePositionTag(To.Line(index),To.Column(index)) " w" this.CELL_W " h" this.CELL_H " Border Center","?")
+        answer := this.GUI.AddText(this.SquarePositionTag(To.Column(index),To.Line(index)) " w" this.CELL_W " h" this.CELL_H " Border Center",logic.board[index].value)
+        answer.index := index
         answer.SetFont("w1000 s64 cPurple","Verdana")
-        answer.OnEvent("Click",inputManager.play.Bind(this,index))
+        answer.OnEvent("DoubleClick",input.play.Bind(this,index))
         return answer
     }
     Render()
     {
-        board := this.state
+        answer := false
         loop this.squares.Length
         {
             index := A_Index
-            this.squares[index].Value := this.getSquareValueFromBoardState(board,To.Line(index),To.Column(index))
+            this.squares[index].Value := logic.board[index].value
         }
-    }
-    SetSquareValue(line,column,theValue)
-    {
-        this.squares[line][column].Value := theValue
+        answer := true
+        return answer
+
     }
     SquarePositionTag(line,column)
     {
@@ -246,7 +343,11 @@ class window {
     }
     Update()
     {
-        this.Render()
+        answer := false
+        isRendered := this.Render()
+        if isRendered == true
+            answer := true
+        return answer
     }
 }
 

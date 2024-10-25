@@ -56,9 +56,12 @@ class To
             answer := "X"
         case 10:
             answer := "O"
+        case 0x1:
+            answer := "X"
+        case 0x2:
+            answer := "O" 
         default:
-            MsgBox("Should Be 00,01,10 but is " flag)
-            return false
+            answer := "E"
         }
         return answer
     }
