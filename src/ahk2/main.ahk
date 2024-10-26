@@ -110,14 +110,15 @@ class logic
     ]
     stateO := logic.stateO
     stateX := logic.stateX
-
-    for pattern in patterns {
-        if ((stateO & (pattern)) == pattern)
+    MsgBox(stateO " " stateX)
+    for pattern in patterns 
+        {
+        if (stateO & pattern == pattern)
         {
             MsgBox("O venceu")
             return true
         }
-        if ((stateX & (pattern)) == pattern)
+        if (stateX & pattern == pattern)
             {
                 MsgBox("X venceu")
                 return true
@@ -136,7 +137,7 @@ class logic
     }
     static endGame(how)
     {
-        if (how != ("draw" && "win"))
+        if !("draw" || "win" == how)
         {
             MsgBox("Expected either 'draw' or 'win' but got" how)
             return false
@@ -337,10 +338,10 @@ class window {
         return answer
 
     }
-    SquarePositionTag(line,column)
+    SquarePositionTag(column,line)
     {
-        x := (line - 1) * this.CELL_W
-        y := (column - 1) * this.CELL_H
+        x := (column - 1) * this.CELL_W
+        y := (line - 1) * this.CELL_H
         answer := "x" x " y" y
         return answer
     }
