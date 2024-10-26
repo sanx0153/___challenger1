@@ -45,7 +45,6 @@ class logic
 {
     static board := logic.createBoard()
     static currentPlayer := 0x1
-    static gameState := 
     static state
     {
         get
@@ -93,20 +92,21 @@ class logic
             if logic.board[A_Index].isEmpty == true
                 return false
         }
+        logic.gameState := "draw"
         return true
     }
     static checkWinner()
     {
     ; Máscaras binárias para padrões de vitória
     patterns := [
-        0x07, ; Linha 1        - 0b000000111
-        0x38, ; Linha 2        - 0b000111000
-        0x1C0, ; Linha 3       - 0b111000000
-        0x49, ; Coluna 1       - 0b001001001
-        0x92, ; Coluna 2       - 0b010010010
-        0x124, ; Coluna 3      - 0b100100100
-        0x111, ; Diagonal principal - 0b100010001
-        0x54  ; Diagonal secundária - 0b001010100
+        000000111,  ; Linha 1        - 0b000000111
+        000111000,  ; Linha 2        - 0b000111000
+        111000000,  ; Linha 3       - 0b111000000
+        001001001,  ; Coluna 1       - 0b001001001
+        010010010,  ; Coluna 2       - 0b010010010
+        100100100,  ; Coluna 3      - 0b100100100
+        100010001,  ; Diagonal principal - 0b100010001
+        001010100   ; Diagonal secundária - 0b001010100
     ]
     stateO := logic.stateO
     stateX := logic.stateX
@@ -136,8 +136,11 @@ class logic
     }
     static endGame(how)
     {
-        if how != ("draw" || "win")
+        if (how != ("draw" && "win"))
+        {
+            MsgBox("Expected either 'draw' or 'win' but got" how)
             return false
+        }
         MsgBox(how)
         return true
     }
