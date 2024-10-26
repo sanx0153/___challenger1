@@ -137,7 +137,7 @@ class logic
     }
     static endGame(how)
     {
-        if !("draw" || "win" == how)
+        if !("draw" || "win" == how) ;this logical test can only work as this
         {
             MsgBox("Expected either 'draw' or 'win' but got" how)
             return false
